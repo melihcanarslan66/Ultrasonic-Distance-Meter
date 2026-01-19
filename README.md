@@ -1,4 +1,5 @@
 # Ultrasonic Distance Meter (ESP32 + HC-SR04 + 16x2 LCD)
+Stack: ESP32 · C++ · PlatformIO · HC-SR04 · 16x2 LCD · Median filter
 
 ESP32 ile HC-SR04 ultrasonik sensörden mesafe ölçümü yapıp 16x2 LCD’de gösteren proje.
 Ölçüm kararlılığı için **Median-5 filtre** ve geçersiz ölçümler için **retry** mekanizması içerir.
