@@ -11,10 +11,6 @@ ESP32 ile HC-SR04 ultrasonik sensörden mesafe ölçümü yapıp 16x2 LCD’de g
 - 5 geçerli örnekten **Median-5** (uç değerleri bastırır)
 - LCD’de sabit genişlik format (`snprintf("%6.2f")`) → karakter kalıntısı bırakmaz
 
-## Demo
-- `media/setup.jpg`
-- `media/demo.gif`
-
 ## Donanım
 - ESP32 DevKit (ESP32-WROOM-32)
 - HC-SR04 Ultrasonic Sensor
