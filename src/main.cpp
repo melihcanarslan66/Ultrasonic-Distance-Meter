@@ -13,6 +13,16 @@ const int D6 = 19;      //LCD ekran
 const int D7 = 21;      //LCD ekran
 LiquidCrystal lcd (RS, E, D4, D5 , D6, D7); //LCD ekran
 
+// Global değerler //
+unsigned long lastLCD_t = 0;
+const unsigned long intervalLCD_t = 250;
+unsigned long lastSense_t = 0;
+const unsigned long intervalSense_t = 100;
+
+float g[5];
+const int maxTry = 3; //Duruma bağlı değiştirilebilir.
+const int Median = 3; //Duruma bağlı değiştirilebilir.
+
 void setup() {
   Serial.begin(115200);
 
@@ -39,7 +49,7 @@ float MesafeCM() { //mesafeyi ölçüyor cm cinsinden.
   digitalWrite(TRIG_PIN, LOW);
 
 
-  unsigned long sure = pulseIn(ECHO_PIN, HIGH, 30000); //yaklaşık 5m menzil.
+  unsigned long sure = pulseIn(ECHO_PIN, HIGH, 12000); //yaklaşık 2m menzil.
 
   if (sure == 0) {
     return NAN;
@@ -56,14 +66,13 @@ float mesafeCM_Try(int maxTry){ //geçerli sonuç alana kadar deniyor ve 5 denem
     float x = MesafeCM();
 
     if(!isnan(x)) return x;
-    delay(25);
   }
   return NAN;
 }
 
 void sort(float g[]) { //küçükten büyüğe sıralıyor.
 
-  for (int i = 1; i < 5; i++) {
+  for (int i = 1; i < Median; i++) {
 
     float key = g[i];
     int j = i - 1;
@@ -80,28 +89,37 @@ void sort(float g[]) { //küçükten büyüğe sıralıyor.
 
 void loop() {
 
-  lcd.setCursor(7, 0);
+  unsigned long now = millis();
 
-  float g[5];
-  const int maxTry=5;
-
-  for (int i = 0; i < 5; i++){ //Ölçülen değeri sırasıyla g[] dizisine tanımladık.
+  if (now-lastSense_t >= intervalSense_t)
+  {
+    for (int i = 0; i < Median; i++){ //Ölçülen değeri sırasıyla g[] dizisine tanımladık.
 
     float m=mesafeCM_Try(maxTry);
 
-    if(isnan(m)){          //
-      lcd.print("---.--"); // Eğer 5 deneme sonunda NAN alıyorsak "---.--" yazdırdık.
-      return;              //
+    if(isnan(m)){          //Eğer maxTry kadar deneme sonunda NAN alıyorsak "---.--" yazdırdık.
+      lcd.setCursor(7, 0);
+      lcd.print("---.--");
+      return;
     }
 
     g[i]=m;
   }
 
+  lastSense_t = now;
+  }
+  
+
   sort(g);
 
-  char buf[10];                              //
-  snprintf(buf, sizeof(buf), "%6.2f", g[2]); // 6 karakterlik yer ayırdık ve "."dan sonra 2 hane olacak şekilde yazdırdık. 
-  lcd.print(buf);                            //
+  if (now-lastLCD_t >= intervalLCD_t)
+  {
+    lcd.setCursor(7, 0);
+    char buf[10];                                     //
+    snprintf(buf, sizeof(buf), "%6.2f", g[Median/2]); // 6 karakterlik yer ayırdık ve "."dan sonra 2 hane olacak şekilde yazdırdık. 
+    lcd.print(buf);                                   //
 
-  delay(100);
+    lastLCD_t = now;
+  }
+  
 }
