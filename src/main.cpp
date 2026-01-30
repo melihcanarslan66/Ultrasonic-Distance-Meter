@@ -19,9 +19,12 @@ const unsigned long intervalLCD_t = 250;
 unsigned long lastSense_t = 0;
 const unsigned long intervalSense_t = 100;
 
-float g[5];
 const int maxTry = 3; //Duruma bağlı değiştirilebilir.
 const int Median = 3; //Duruma bağlı değiştirilebilir.
+float win[Median];
+float temp[Median];
+char buf[10];
+int count = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -70,20 +73,20 @@ float mesafeCM_Try(int maxTry){ //geçerli sonuç alana kadar deniyor ve 5 denem
   return NAN;
 }
 
-void sort(float g[]) { //küçükten büyüğe sıralıyor.
+void sort(float temp[]) { //küçükten büyüğe sıralıyor.
 
   for (int i = 1; i < Median; i++) {
 
-    float key = g[i];
+    float key = temp[i];
     int j = i - 1;
 
-    while (j >= 0 && g[j] > key) {
+    while (j >= 0 && temp[j] > key) {
 
-      g[j + 1] = g[j];
+      temp[j + 1] = temp[j];
       j--;
     }
 
-    g[j + 1] = key;
+    temp[j + 1] = key;
   }
 }
 
@@ -91,33 +94,56 @@ void loop() {
 
   unsigned long now = millis();
 
-  if (now-lastSense_t >= intervalSense_t)
+  if (now-lastSense_t >= intervalSense_t) // Sensörü zamanı geldiğinde çalıştırıyor.
   {
-    for (int i = 0; i < Median; i++){ //Ölçülen değeri sırasıyla g[] dizisine tanımladık.
 
-    float m=mesafeCM_Try(maxTry);
+    float m = mesafeCM_Try(maxTry);
 
-    if(isnan(m)){          //Eğer maxTry kadar deneme sonunda NAN alıyorsak "---.--" yazdırdık.
-      lcd.setCursor(7, 0);
-      lcd.print("---.--");
-      return;
+    win[count]=m;
+    count=(count + 1) % Median;
+
+    lastSense_t = now;
+  }
+
+  if (now-lastLCD_t >= intervalLCD_t) // Ekranı zamanı geldiğinde güncelliyor.
+  {
+    int valid = 0;
+    lcd.setCursor(7, 0);
+
+    for (int i = 0; i < Median; i++) //Kayan değerlerimizi(win) geçerliyse geçici(temp) değere kopyaladık.
+    {
+      if (!isnan(win[i]))
+      {
+        temp[valid]=win[i];
+        valid++;
+      }
+      
     }
 
-    g[i]=m;
-  }
+    if(valid == 0) //Eğer hepsini NAN alıyorsak "---.--" yazdırdık.
+    { 
+      lcd.print("---.--");
+    }
 
-  lastSense_t = now;
-  }
-  
+    if (valid == 1)
+    {
+      snprintf(buf, sizeof(buf), "%6.2f", temp[0]);
+      lcd.print(buf);
+    }
+    
+    if (valid == 2)
+    {
+      snprintf(buf, sizeof(buf), "%6.2f", (temp[0]+temp[1])/2);
+      lcd.print(buf);
+    }
+    
+    if (valid == 3) // 6 karakterlik yer ayırdık ve "."dan sonra 2 hane olacak şekilde yazdırdık. 
+    {
+      sort(temp);
 
-  sort(g);
-
-  if (now-lastLCD_t >= intervalLCD_t)
-  {
-    lcd.setCursor(7, 0);
-    char buf[10];                                     //
-    snprintf(buf, sizeof(buf), "%6.2f", g[Median/2]); // 6 karakterlik yer ayırdık ve "."dan sonra 2 hane olacak şekilde yazdırdık. 
-    lcd.print(buf);                                   //
+      snprintf(buf, sizeof(buf), "%6.2f", temp[Median/2]);
+      lcd.print(buf);
+    }
 
     lastLCD_t = now;
   }
