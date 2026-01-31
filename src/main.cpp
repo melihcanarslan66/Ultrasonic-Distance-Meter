@@ -90,9 +90,28 @@ void sort(float temp[]) { //küçükten büyüğe sıralıyor.
   }
 }
 
-void loop() {
+float displayValue(int valid, float temp[Median]){
 
-  unsigned long now = millis();
+  if (valid == 1)
+  {
+    return temp[0];
+  }
+
+  if (valid == 2)
+  {
+    return (temp[0]+temp[1])/2 ;
+  }
+
+  if (valid == 3)
+  {
+    sort(temp);
+    return temp[Median/2];
+  }
+
+  return NAN;
+}
+
+void updateSensor(unsigned long now){
 
   if (now-lastSense_t >= intervalSense_t) // Sensörü zamanı geldiğinde çalıştırıyor.
   {
@@ -104,6 +123,9 @@ void loop() {
 
     lastSense_t = now;
   }
+}
+
+void updateLCD(unsigned long now){
 
   if (now-lastLCD_t >= intervalLCD_t) // Ekranı zamanı geldiğinde güncelliyor.
   {
@@ -117,35 +139,30 @@ void loop() {
         temp[valid]=win[i];
         valid++;
       }
-      
     }
 
-    if(valid == 0) //Eğer hepsini NAN alıyorsak "---.--" yazdırdık.
+    float Value = displayValue(valid,temp);
+
+    if( isnan(Value) )
     { 
-      lcd.print("---.--");
+      lcd.print("---.-- ");
     }
-
-    if (valid == 1)
-    {
-      snprintf(buf, sizeof(buf), "%6.2f", temp[0]);
-      lcd.print(buf);
-    }
-    
-    if (valid == 2)
-    {
-      snprintf(buf, sizeof(buf), "%6.2f", (temp[0]+temp[1])/2);
-      lcd.print(buf);
-    }
-    
-    if (valid == 3) // 6 karakterlik yer ayırdık ve "."dan sonra 2 hane olacak şekilde yazdırdık. 
-    {
-      sort(temp);
-
-      snprintf(buf, sizeof(buf), "%6.2f", temp[Median/2]);
+    else{
+      snprintf(buf, sizeof(buf), "%6.2f", Value);
       lcd.print(buf);
     }
 
     lastLCD_t = now;
   }
+}
+
+
+void loop() {
+
+  unsigned long now = millis();
+
+  updateSensor(now);
+
+  updateLCD(now);
   
 }
